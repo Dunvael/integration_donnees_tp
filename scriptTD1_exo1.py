@@ -1,9 +1,9 @@
 import pandas as pd
 import time, os
 
-CSV = "flight_data_2024.csv"
-PQ  = "flight_data_2024.parquet"
-PQC = "flight_data_2024_snappy.parquet"
+CSV = r"C:\Users\IDLE6450\OneDrive - France Travail\Documents\EPSI - Cours\Data Management\Mourad\flight_data_2024.csv"
+PQ  = r"C:\Users\IDLE6450\OneDrive - France Travail\Documents\EPSI - Cours\Data Management\Mourad\flight_data_2024.parquet"
+PQC = r"C:\Users\IDLE6450\OneDrive - France Travail\Documents\EPSI - Cours\Data Management\Mourad\flight_data_2024_snappy.parquet"
 
 # Chargement CSV
 t0 = time.time()
