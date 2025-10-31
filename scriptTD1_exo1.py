@@ -1,28 +1,28 @@
 import pandas as pd
-import os
-import time
+import time, os
 
-# 1. Chargement CSV
-start = time.time()
-df = pd.read_csv("flight_data_2024.csv")
-end = time.time()
-print(f"Temps de chargement CSV : {end - start:.2f} s")
+CSV = "flight_data_2024.csv"
+PQ  = "flight_data_2024.parquet"
+PQC = "flight_data_2024_snappy.parquet"
 
-# 2. Conversion en Parquet
-df.to_parquet("flight_data_2024.parquet")
-df.to_parquet("flight_data_2024_compressed.parquet", compression="snappy")
+# Chargement CSV
+t0 = time.time()
+df = pd.read_csv(CSV)
+print(f"Temps lecture CSV: {time.time()-t0:.2f}s")
 
-# 3. Analyse d’espace
-size_csv = os.path.getsize("flight_data_2024.csv")
-size_parquet = os.path.getsize("flight_data_2024.parquet")
-size_parquet_comp = os.path.getsize("flight_data_2024_compressed.parquet")
+# Écriture Parquet (pyarrow)
+df.to_parquet(PQ, engine="pyarrow")
+df.to_parquet(PQC, engine="pyarrow", compression="snappy")
 
-print(f"Taille CSV : {size_csv/1e6:.2f} MB")
-print(f"Taille Parquet : {size_parquet/1e6:.2f} MB")
-print(f"Taille Parquet (compressé) : {size_parquet_comp/1e6:.2f} MB")
+# Tailles
+for p in [CSV, PQ, PQC]:
+    print(p, f"{os.path.getsize(p)/1e6:.2f} MB")
 
-# 4. Taux de réduction
-reduction_parquet = (1 - size_parquet / size_csv) * 100
-reduction_parquet_comp = (1 - size_parquet_comp / size_csv) * 100
-print(f"Réduction Parquet vs CSV : {reduction_parquet:.2f}%")
-print(f"Réduction Parquet compressé vs CSV : {reduction_parquet_comp:.2f}%")
+# Lecture complète
+t0 = time.time(); pd.read_parquet(PQ, engine="pyarrow");  print(f"Parquet: {time.time()-t0:.2f}s")
+t0 = time.time(); pd.read_parquet(PQC, engine="pyarrow"); print(f"Parquet (snappy): {time.time()-t0:.2f}s")
+
+# Lecture ciblée de 2 colonnes
+cols = ["Airline", "DepDelay"]  # adapte aux noms réels
+t0 = time.time(); pd.read_csv(CSV, usecols=cols);                 print(f"CSV (2 cols): {time.time()-t0:.2f}s")
+t0 = time.time(); pd.read_parquet(PQ,  engine="pyarrow", columns=cols); print(f"Parquet (2 cols): {time.time()-t0:.2f}s")
