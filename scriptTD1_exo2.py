@@ -8,7 +8,7 @@ except ImportError:
     sys.exit(1)
 
 # ========= PARAMÈTRES =========
-INPUT = r"C:\Users\IDLE6450\OneDrive - France Travail\Documents\EPSI - Cours\Data Management\Mourad\TD1\clients_data.csv"
+INPUT = r"C:\Users\IDLE6450\OneDrive - France Travail\Documents\EPSI - Cours\Data Management\Mourad\TD1\clients_data.parquet"
 OUTPUT_ALL = r"clients_data_protege.csv"
 FAKER_LOCALE = "fr_FR"  # noms factices FR
 
