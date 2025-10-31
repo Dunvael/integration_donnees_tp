@@ -8,10 +8,17 @@ except ImportError:
     sys.exit(1)
 
 # ========= PARAMÈTRES =========
-INPUT = r"clients_data.csv"  # adapte le chemin vers ton dataset
+INPUT = r"C:\Users\IDLE6450\OneDrive - France Travail\Documents\EPSI - Cours\Data Management\Mourad\TD1\clients_data.csv"
 OUTPUT_ALL = r"clients_data_protege.csv"
-SECRET_KEY = b"CHANGE_ME_WITH_A_SECURE_RANDOM_KEY"  # clé secrète pour HMAC (pseudonymes & hachage salé)
 FAKER_LOCALE = "fr_FR"  # noms factices FR
+
+# --- Clé secrète robuste (démo) ---
+# En prod: lisez la clé depuis une variable d'env ou KMS/HSM
+SECRET_KEY = os.environ.get("TD1_SECRET_KEY", None)
+if not SECRET_KEY:
+    SECRET_KEY = os.urandom(32)  # clé de démo si non fournie
+if isinstance(SECRET_KEY, str):
+    SECRET_KEY = SECRET_KEY.encode("utf-8")
 
 # ========= OUTILS DE SÉCURITÉ =========
 fake = Faker(FAKER_LOCALE)
@@ -49,16 +56,12 @@ def mask_phone(phone: str) -> str:
     if not digits:
         return phone
     keep = 2
-    # recalculer une chaîne en remplaçant les chiffres sauf les keep derniers
     to_mask = max(0, len(digits) - keep)
     out = []
     digit_idx = 0
     for ch in phone:
         if ch.isdigit():
-            if digit_idx < to_mask:
-                out.append("X")
-            else:
-                out.append(ch)
+            out.append("X" if digit_idx < to_mask else ch)
             digit_idx += 1
         else:
             out.append(ch)
@@ -67,8 +70,8 @@ def mask_phone(phone: str) -> str:
 def generalize_city_to_dept(row: pd.Series) -> str:
     """
     Généralisation 'ville_résidence' -> code départemental si possible.
-    Méthode 1 (préférée): si 'code_postal' existe, on prend les 2 premiers chiffres.
-    Méthode 2 (fallback): bucketiser par initiale de la ville (perte de précision, mais déterministe).
+    Méthode 1: si 'code_postal' existe (5 chiffres) -> 2 premiers chiffres.
+    Méthode 2: fallback REG_X selon initiale de la ville.
     """
     cp = None
     for k in ["code_postal", "CodePostal", "postal_code", "cp"]:
@@ -76,26 +79,21 @@ def generalize_city_to_dept(row: pd.Series) -> str:
             cp = str(row[k])
             break
     if cp and re.match(r"^\d{5}$", cp):
-        return cp[:2]  # département FR (approximation simple)
-    # Fallback si pas de code postal exploitable
+        return cp[:2]
     ville_key = None
     for k in ["ville_résidence", "ville", "city"]:
         if k in row and pd.notna(row[k]) and str(row[k]).strip():
             ville_key = str(row[k]).strip().lower()
             break
     if ville_key:
-        # ex: regrouper par 1re lettre comme "généralisation régionale" fictive
         return f"REG_{ville_key[0].upper()}"
     return "REG_INCONNU"
 
 def salted_sha256(value: str, salt_key: bytes = SECRET_KEY) -> str:
-    """
-    Hachage SHA-256 salé (via HMAC pour résistance aux rainbow tables).
-    """
+    """Hachage SHA-256 salé (HMAC) pour résister aux rainbow tables."""
     if value is None:
         value = ""
-    mac = hmac.new(salt_key, value.encode("utf-8"), hashlib.sha256).hexdigest()
-    return mac
+    return hmac.new(salt_key, value.encode("utf-8"), hashlib.sha256).hexdigest()
 
 def pseudonymize_id(value: str, secret_key: bytes = SECRET_KEY, length: int = 16) -> str:
     """
@@ -111,7 +109,17 @@ def pseudonymize_id(value: str, secret_key: bytes = SECRET_KEY, length: int = 16
 if not os.path.exists(INPUT):
     raise FileNotFoundError(f"Fichier introuvable: {INPUT}")
 
-df = pd.read_csv(INPUT, low_memory=False)
+# Chargement robuste encodage FR/BOM
+try:
+    df = pd.read_csv(INPUT, low_memory=False, encoding="utf-8-sig")
+except UnicodeDecodeError:
+    df = pd.read_csv(INPUT, low_memory=False, encoding="latin-1")
+
+# Avertir si colonnes clés absentes (non bloquant)
+expected_core = ["nom","prénom","prenom","email","ville_résidence","montant_achat","id_client"]
+missing = [c for c in expected_core if c not in df.columns]
+if missing:
+    print(f"ℹ️ Colonnes absentes (non bloquant, le script continue) : {missing}")
 
 # ========= MASQUAGE =========
 # Noms / prénoms -> valeurs factices cohérentes
@@ -122,35 +130,24 @@ if "prénom" in df.columns:
 elif "prenom" in df.columns:
     df["prenom_masque"] = df["prenom"].apply(lambda x: deterministic_fake_name(str(x), which="first"))
 
-# Téléphone masqué
+# Téléphone masqué (prend la 1re colonne trouvée)
 for tel_col in ["téléphone", "telephone", "tel", "phone"]:
     if tel_col in df.columns:
         df[f"{tel_col}_masque"] = df[tel_col].apply(mask_phone)
-        break  # masque une colonne de téléphone
+        break
 
 # ========= ANONYMISATION / GÉNÉRALISATION =========
-# ville_résidence -> code départemental (ou REG_X fallback)
 if "ville_résidence" in df.columns or "ville" in df.columns or "city" in df.columns:
     df["ville_generalisee"] = df.apply(generalize_city_to_dept, axis=1)
 
 # ========= PSEUDONYMISATION / HACHAGE =========
 # id_client -> pseudonyme
-id_col = None
-for k in ["id_client", "client_id", "id"]:
-    if k in df.columns:
-        id_col = k
-        break
-
+id_col = next((k for k in ["id_client", "client_id", "id"] if k in df.columns), None)
 if id_col:
     df["id_client_pseudo"] = df[id_col].apply(lambda x: pseudonymize_id(str(x)))
 
 # email -> hachage (simulation de chiffrement)
-email_col = None
-for k in ["email", "mail", "courriel"]:
-    if k in df.columns:
-        email_col = k
-        break
-
+email_col = next((k for k in ["email", "mail", "courriel"] if k in df.columns), None)
 if email_col:
     df["email_hash"] = df[email_col].apply(lambda x: salted_sha256(str(x)))
 
@@ -165,31 +162,37 @@ RBAC_COLUMNS: Dict[str, List[str]] = {
     ],
     "Support_Client_N1": [
         "id_client_pseudo", "nom_masque", "prenom_masque",
-        # on essaie de trouver la colonne téléphone masquée créée plus haut
         next((c for c in df.columns if c.endswith("_masque") and ("tel" in c or "phone" in c or "téléphone" in c)), None),
         "montant_achat"
     ],
-    "Admin_Sécurité": list(df.columns)  # accès complet (y compris hash email)
+    "Admin_Sécurité": list(df.columns)  # accès complet
 }
 
 def get_data_by_role(role: str, dataframe: pd.DataFrame) -> pd.DataFrame:
     """
     Simule un contrôle d'accès par rôle en restreignant les colonnes visibles.
-    - Ignore silencieusement les colonnes manquantes (robuste au schéma).
+    - Ignore silencieusement les colonnes manquantes.
     """
     if role not in RBAC_COLUMNS:
         raise ValueError(f"Rôle inconnu: {role}. Choisissez parmi: {list(RBAC_COLUMNS)}")
     cols = [c for c in RBAC_COLUMNS[role] if c and (c in dataframe.columns)]
     return dataframe.loc[:, cols]
 
-# ========= DÉMONSTRATION =========
+# ========= DÉMONSTRATION & EXPORTS RBAC =========
+out_dir = os.path.dirname(OUTPUT_ALL) or "."
+os.makedirs(out_dir, exist_ok=True)
+
 for role in ["Analyste_Marketing", "Support_Client_N1", "Admin_Sécurité"]:
     print(f"\n--- Vue RBAC: {role} ---")
     try:
         view = get_data_by_role(role, df)
         print(view.head(5).to_string(index=False))
+        role_slug = role.replace(" ", "_").replace("é","e").replace("É","E")
+        view.to_csv(os.path.join(out_dir, f"clients_data_view_{role_slug}.csv"), index=False)
     except Exception as e:
         print(f"Erreur pour {role}: {e}")
+
+print("✅ Vues RBAC exportées (CSV) pour les 3 rôles.")
 
 # ========= NOTES POUR LE COMPTE-RENDU =========
 notes = """
@@ -200,20 +203,18 @@ notes = """
   - téléphone: conservation des 2 derniers chiffres, reste masqué.
 
 • Anonymisation (Généralisation):
-  - ville_résidence généralisée en code département (2 premiers chiffres du code postal).
-  - fallback: REG_X si code postal indisponible (perte volontaire de précision).
+  - ville_résidence généralisée en code département (2 premiers chiffres du code postal) ou REG_X sinon.
 
 • Pseudonymisation / Hachage:
   - id_client -> pseudonyme HMAC-SHA256(id, SECRET_KEY), tronqué (stable & non réversible sans clé).
   - email -> HMAC-SHA256(email, SECRET_KEY) (simulation d’un chiffrement en prod).
 
 • En production: Chiffrement symétrique vs asymétrique
-  - Symétrique (ex: AES-GCM): une clé K unique protège/déchiffre; stocker K dans un KMS (AWS KMS, Azure Key Vault, GCP KMS) et appliquer une politique RBAC stricte. Rotation régulière des clés.
-  - Asymétrique (RSA/ECDSA): la clé publique chiffre, seule la clé privée (protégée en HSM/KMS) peut déchiffrer. Pratique pour partager l’ingestion sans exposer la clé de déchiffrement.
-  - Toujours journaliser (audit), chiffrer “au repos” (at-rest) et “en transit” (TLS), et segmenter les droits (principe du moindre privilège).
+  - Symétrique (ex: AES-GCM): clé gérée par KMS/HSM (AWS KMS, Azure Key Vault, GCP KMS), rotation & audit.
+  - Asymétrique (RSA/ECDSA): clé publique pour chiffrer, clé privée protégée (HSM/KMS) pour déchiffrer.
+  - Toujours TLS, principe du moindre privilège, journaux d’audit, Column/Row-Level Security côté DWH.
 
 • RBAC:
-  - get_data_by_role(role, df) restreint les colonnes selon le rôle (marketing: agrégé/anonymisé; support: PII masquées; admin sécurité: complet).
-  - En environnement réel: implémenter côté entrepôt/Cloud via rôles IAM (ex: AWS IAM + Lake Formation, GCP IAM + BigQuery Column ACLs, Azure Purview/SQL RBAC) et “column/row-level security”. Les clés de chiffrement restent gérées par KMS/HSM et jamais exposées aux utilisateurs finaux.
+  - get_data_by_role(role, df) restreint les colonnes selon le rôle (marketing: agrégé/anonymisé; support: PII masquées; admin: complet).
 """
 print(notes)

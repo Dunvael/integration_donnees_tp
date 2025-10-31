@@ -2,10 +2,10 @@ import pandas as pd
 import os, time
 
 # === Paramètres ===
-CSV = r"C:\Users\IDLE6450\OneDrive - France Travail\Documents\EPSI - Cours\Data Management\Mourad\flight_data_2024.csv"
-PQ  = r"C:\Users\IDLE6450\OneDrive - France Travail\Documents\EPSI - Cours\Data Management\Mourad\flight_data_2024.parquet"          # non compressé
-PQS = r"C:\Users\IDLE6450\OneDrive - France Travail\Documents\EPSI - Cours\Data Management\Mourad\flight_data_2024_snappy.parquet"  # snappy
-PQZ = r"C:\Users\IDLE6450\OneDrive - France Travail\Documents\EPSI - Cours\Data Management\Mourad\flight_data_2024_zstd.parquet"    # zstd (bonus)
+CSV = r"C:\Users\IDLE6450\OneDrive - France Travail\Documents\EPSI - Cours\Data Management\Mourad\TD1\flight_data_2024.csv"
+PQ  = r"C:\Users\IDLE6450\OneDrive - France Travail\Documents\EPSI - Cours\Data Management\Mourad\TD1\flight_data_2024.parquet"          # non compressé
+PQS = r"C:\Users\IDLE6450\OneDrive - France Travail\Documents\EPSI - Cours\Data Management\Mourad\TD1\flight_data_2024_snappy.parquet"  # snappy
+PQZ = r"C:\Users\IDLE6450\OneDrive - France Travail\Documents\EPSI - Cours\Data Management\Mourad\TD1\flight_data_2024_zstd.parquet"    # zstd (bonus)
 
 # === 0) Inspecter les colonnes réelles du CSV ===
 # nrows=0 lit uniquement l'en-tête, très rapide
