@@ -4,7 +4,7 @@
 
 *Membres du groupe* : 
 
-* Aymeric 
+* Aymeric BOISGONTIER
 * Dunvael LE ROUX
 
 Lien GitHub docker : <https://github.com/mouradelchyakhi/enseignement_epsi/tree/main/tp_docker_light>
@@ -53,14 +53,32 @@ Lien GitHub docker : <https://github.com/mouradelchyakhi/enseignement_epsi/tree/
 
 Oui on relève des anomalies potentielles (null, station invalid/orpheline, coord_lon pas de chiffre) => cf captures d'écran.
 
+
+| Table | Anomalies Principale | Correction à appliquer |  
+| --- | --- | --- |  
+| bike_maintenance_logs | Dates au format texte/timestamp mixte | Cast en DATE standard |
+| bikes | "Types hétérogènes (""E-bike"" vs ""Electrique"")" | Standardisation via CASE WHEN |  
+| bikes_rentals | Trajets < 2 min et IDs non standards | Filtre durée & Renommage colonnes |  
+| bikes_station | "Lat/Lon en texte, Ville 99, Doublons" | Nettoyage Regex & suppression orphelins |  
+| cities | Régions vides | "Remplacement par ""Region Inconnue"" |  
+| daily_activity | Colonne date mal nommée | Renommage |  
+| marketing_campaigns | Budgets vides | Remplacement par 0 |  
+| rental_archives | Trajets < 2 min et IDs non standards | Filtre durée & Renommage colonnes |  
+| subscriptions | Types d'abo vides | "Valeur par défaut ""Standard"" |  
+| user_accounts | Dates FR/EN mélangées | Parsing intelligent avec Regex |  
+| user_session_logs | Appareils inconnus | "Remplacement par ""unknown"" |  
+| weather_forecast_hourly | Précipitations NULL | Remplacement par 0 |  
+
+---
+
 **Etape 3 - Création du schéma de transformation dans PostgreSQL**
 
 * Création du schéma de transformation dans PostgreSQL : 
 * Se connecter à la base PostgreSQL avec pgAdmin
 * Créer un nouveau schéma pour les transformations
-* 
+
 ```
-CREATE SCHEMA IF NOT EXISTS analytics_votreNom_silver;
+CREATE SCHEMA IF NOT EXISTS analytics_le_roux_boisgontier;
 ```
 
 CF schéma capture d'écran
@@ -84,169 +102,202 @@ ORDER BY table_schema, table_name;
 
 ```
 -- ==============================================================================
--- 1. TABLE DE FAITS : LOCATIONS (TRANSACTIONS)
--- Cette table enregistre l'événement principal : la location d'un vélo.
--- Transformations : Conversion timestamps, calcul de durée, exclusion des trajets impossibles.
+-- SCRIPT DE NETTOYAGE "SILVER" - CORRECTIFS COMPLETS
+-- Objectif : Transformer les données brutes (Raw) en données fiables (Silver)
 -- ==============================================================================
-CREATE TABLE analytics_le_roux_boisgontier.bikes_rentals AS
-SELECT
-    id,
-    bike_id,             -- FK vers Dimension Bikes
-    user_id,             -- FK vers Dimension Users
-    station_start_id,    -- FK vers Dimension Stations
-    station_end_id,      -- FK vers Dimension Stations
-    start_time::timestamp AS start_time,
-    end_time::timestamp AS end_time,
-    -- Calcul de la durée en minutes. GREATEST assure qu'on a pas de durée négative.
-    GREATEST(EXTRACT(EPOCH FROM (end_time::timestamp - start_time::timestamp))/60, 0) AS duration_minutes
-FROM raw.bikes_rentals
-WHERE 
-    start_time IS NOT NULL
-    AND end_time IS NOT NULL
-    AND end_time > start_time;
+
+-- 1. Initialisation : On repart d'une page blanche pour le schéma cible
+DROP SCHEMA IF EXISTS analytics_le_roux_boisgontier CASCADE;
+CREATE SCHEMA analytics_le_roux_boisgontier;
 
 -- ==============================================================================
--- 2. TABLE DE DIMENSION : STATIONS
--- Contexte : Où se trouvent les vélos ?
--- Transformations : Gestion des capacités nulles (par défaut à 0).
+-- TABLE 1 : STATIONS (Le plus gros nettoyage)
+-- Anomalies traitées : Coordonnées texte, Noms nuls, Doublons, Villes inconnues
 -- ==============================================================================
 CREATE TABLE analytics_le_roux_boisgontier.bikes_station AS
-SELECT
-    station_id,   -- PK
+SELECT DISTINCT ON (station_name, city_id) -- Dédoublonnage strict
+    station_id,
     station_name,
-    COALESCE(capacity, 0) AS capacity 
-FROM raw.bikes_station
-WHERE station_id IS NOT NULL AND station_name IS NOT NULL;
+    -- Conversion forcée des coordonnées, NULL si c'est du texte
+    CASE WHEN latitude ~ '^[0-9.-]+$' THEN latitude::numeric ELSE NULL END AS latitude,
+    CASE WHEN longitude ~ '^[0-9.-]+$' THEN longitude::numeric ELSE NULL END AS longitude,
+    COALESCE(capacity, 0) AS capacity,
+    city_id
+FROM raw.bike_stations
+WHERE 
+    station_name IS NOT NULL           -- Filtre noms vides
+    AND latitude ~ '^[0-9.-]+$'        -- Filtre lat invalide
+    AND longitude ~ '^[0-9.-]+$'       -- Filtre lon invalide
+    AND city_id IN (SELECT city_id FROM raw.cities); -- Filtre villes fantômes (99)
 
 -- ==============================================================================
--- 3. TABLE DE DIMENSION : VÉLOS (BIKES)
--- Contexte : Quel équipement a été utilisé ?
--- Transformations : Gestion des statuts inconnus.
+-- TABLE 2 : VÉLOS (Standardisation)
+-- Anomalies traitées : "E-bike"/"electrique", Statuts NULL
 -- ==============================================================================
 CREATE TABLE analytics_le_roux_boisgontier.bikes AS
 SELECT
-    bike_id,      -- PK
-    bike_type,
-    COALESCE(status, 'unknown') AS status
+    bike_id,
+    -- Harmonisation du vocabulaire
+    CASE 
+        WHEN LOWER(bike_type) LIKE '%e-bike%' OR LOWER(bike_type) LIKE '%electrique%' THEN 'Electrique'
+        ELSE INITCAP(bike_type) -- Met la 1ère lettre en majuscule (Mecanique)
+    END AS bike_type,
+    model_name,
+    COALESCE(status, 'unknown') AS status,
+    commissioning_date
 FROM raw.bikes
 WHERE bike_id IS NOT NULL;
 
 -- ==============================================================================
--- 4. TABLE DE DIMENSION : VILLES (CITIES)
--- Contexte : Géographie des stations.
--- Transformations : Région par défaut si vide.
+-- TABLE 3 : UTILISATEURS (Le casse-tête des dates)
+-- Anomalies traitées : Dates FR/EN mélangées, Âges > 100 ans
+-- ==============================================================================
+CREATE TABLE analytics_le_roux_boisgontier.user_accounts AS
+SELECT
+    user_id,
+    first_name,
+    last_name,
+    email,
+    -- Détection et correction du format de date de naissance
+    CASE 
+        WHEN birthdate ~ '^\d{4}-\d{2}-\d{2}$' THEN TO_DATE(birthdate, 'YYYY-MM-DD')
+        WHEN birthdate ~ '^\d{2}/\d{2}/\d{4}$' THEN TO_DATE(birthdate, 'DD/MM/YYYY')
+        ELSE NULL 
+    END AS birthdate,
+    -- Même logique pour inscription
+    CASE 
+        WHEN registration_date ~ '^\d{4}-\d{2}-\d{2}$' THEN TO_DATE(registration_date, 'YYYY-MM-DD')
+        WHEN registration_date ~ '^\d{2}/\d{2}/\d{4}$' THEN TO_DATE(registration_date, 'DD/MM/YYYY')
+        ELSE NULL
+    END AS registration_date,
+    subscription_id AS sub_id
+FROM raw.user_accounts
+WHERE 
+    user_id IS NOT NULL
+    -- Filtre supplémentaire : On ignore les dates de naissance antérieures à 1920 (aberrations)
+    AND (
+        (birthdate ~ '^\d{4}' AND LEFT(birthdate, 4)::int > 1920) OR
+        (birthdate ~ '^\d{2}/\d{2}/\d{4}$' AND RIGHT(birthdate, 4)::int > 1920)
+    );
+
+-- ==============================================================================
+-- TABLE 4 : LOCATIONS (Filtres métier)
+-- Anomalies traitées : Trajets < 2 min, Noms colonnes
+-- ==============================================================================
+CREATE TABLE analytics_le_roux_boisgontier.bikes_rentals AS
+SELECT
+    rental_id AS id,
+    bike_id,
+    user_id,
+    start_station_id AS station_start_id,
+    end_station_id AS station_end_id,
+    start_t::timestamp AS start_time,
+    end_t::timestamp AS end_time,
+    GREATEST(EXTRACT(EPOCH FROM (end_t::timestamp - start_t::timestamp))/60, 0) AS duration_minutes
+FROM raw.bike_rentals
+WHERE 
+    start_t IS NOT NULL 
+    AND end_t IS NOT NULL
+    AND end_t > start_t -- La fin doit être après le début
+    AND (EXTRACT(EPOCH FROM (end_t::timestamp - start_t::timestamp))/60) >= 2; -- Durée min 2 min
+
+-- ==============================================================================
+-- TABLE 5 : ARCHIVES LOCATIONS (Même traitement)
+-- ==============================================================================
+CREATE TABLE analytics_le_roux_boisgontier.rental_archives_2022 AS
+SELECT
+    rental_id AS archive_id,
+    bike_id,
+    user_id,
+    start_t::timestamp AS start_time,
+    end_t::timestamp AS end_time,
+    GREATEST(EXTRACT(EPOCH FROM (end_t::timestamp - start_t::timestamp))/60, 0) AS duration_minutes
+FROM raw.rentals_archive_2022
+WHERE 
+    start_t IS NOT NULL 
+    AND end_t > start_t
+    AND (EXTRACT(EPOCH FROM (end_t::timestamp - start_t::timestamp))/60) >= 2;
+
+-- ==============================================================================
+-- TABLE 6 : VILLES
+-- Anomalie : Régions manquantes
 -- ==============================================================================
 CREATE TABLE analytics_le_roux_boisgontier.cities AS
 SELECT
-    city_id,      -- PK
+    city_id,
     city_name,
-    COALESCE(region, 'inconnue') AS region
+    COALESCE(region, 'Region Inconnue') AS region
 FROM raw.cities
 WHERE city_id IS NOT NULL;
 
 -- ==============================================================================
--- 5. TABLE D'AGRÉGAT (FAITS PRÉ-CALCULÉS)
--- Résumé quotidien historique. Utile pour les tableaux de bord rapides.
+-- TABLE 7 : MÉTÉO
+-- Anomalie : Précipitations NULL -> 0
 -- ==============================================================================
-CREATE TABLE analytics_le_roux_boisgontier.daily_activity_summary_old AS
+CREATE TABLE analytics_le_roux_boisgontier.weather_forecast_hourly AS
 SELECT
-    date::date AS date,
-    COALESCE(total_rentals, 0) AS total_rentals
-FROM raw.daily_activity_summary_old
-WHERE date IS NOT NULL;
+    forecast_time AS date_time,
+    city_id,
+    COALESCE(temperature_celsius, 0) AS temperature_celsius,
+    COALESCE(precipitation_mm, 0) AS precipitation_mm
+FROM raw.weather_forecast_hourly
+WHERE forecast_time IS NOT NULL;
 
 -- ==============================================================================
--- 6. TABLE DE DIMENSION : CAMPAGNES MARKETING
--- Contexte : Pourquoi y a-t-il des pics de ventes ?
--- Transformations : Cast des dates au format timestamp.
+-- TABLES SIMPLES (Juste renommage/Typage standard)
 -- ==============================================================================
+
+-- 8. Maintenance
+CREATE TABLE analytics_le_roux_boisgontier.bike_maintenance_logs AS
+SELECT
+    log_id AS maintenance_id,
+    bike_id,
+    issue_description,
+    report_date::date AS maintenance_date,
+    cost_eur
+FROM raw.bike_maintenance_logs
+WHERE bike_id IS NOT NULL;
+
+-- 9. Campagnes Marketing
 CREATE TABLE analytics_le_roux_boisgontier.marketing_campaigns AS
 SELECT
-    campaign_id,   -- PK
+    campaign_id,
     campaign_name,
-    start_date::timestamp AS start_date,
-    end_date::timestamp AS end_date
+    start_date,
+    end_date,
+    COALESCE(budget_eur, 0) AS budget_eur
 FROM raw.marketing_campaigns
-WHERE start_date IS NOT NULL AND end_date IS NOT NULL;
+WHERE start_date IS NOT NULL;
 
--- ==============================================================================
--- 7. TABLE DE FAITS : ARCHIVES 2022
--- Données froides (historique). Même structure que bikes_rentals.
--- ==============================================================================
-CREATE TABLE analytics_le_roux_boisgontier.rental_archives_2022 AS
-SELECT
-    archive_id,
-    bike_id,
-    start_time::timestamp AS start_time,
-    end_time::timestamp AS end_time,
-    GREATEST(EXTRACT(EPOCH FROM (end_time::timestamp - start_time::timestamp))/60, 0) AS duration_minutes
-FROM raw.rental_archives_2022
-WHERE start_time IS NOT NULL AND end_time IS NOT NULL AND end_time > start_time;
-
--- ==============================================================================
--- 8. TABLE DE DIMENSION (ou TABLE DE LIEN) : ABONNEMENTS
--- Relie un utilisateur à un type d'abonnement.
--- ==============================================================================
+-- 10. Abonnements
 CREATE TABLE analytics_le_roux_boisgontier.subscriptions AS
 SELECT
-    sub_id,
-    sub_type,
-    user_id
+    subscription_id AS sub_id,
+    COALESCE(subscription_type, 'Standard') AS sub_type,
+    price_eur
 FROM raw.subscriptions
-WHERE sub_id IS NOT NULL;
+WHERE subscription_id IS NOT NULL;
 
--- ==============================================================================
--- 9. TABLE DE DIMENSION : UTILISATEURS (ACCOUNTS)
--- Contexte : Qui loue les vélos ? (Âge, type d'abonnement)
--- ==============================================================================
-CREATE TABLE analytics_le_roux_boisgontier.user_accounts AS
-SELECT
-    user_id,       -- PK
-    birthdate::date AS birthdate,
-    sub_id         -- FK vers Subscriptions
-FROM raw.user_accounts
-WHERE user_id IS NOT NULL AND birthdate IS NOT NULL;
-
--- ==============================================================================
--- 10. TABLE DE FAITS : LOGS DE SESSION
--- Événements numériques (logs). Granularité fine (clic/connexion).
--- ==============================================================================
+-- 11. Logs Session
 CREATE TABLE analytics_le_roux_boisgontier.user_session_logs AS
 SELECT
     session_id,
     user_id,
     COALESCE(device_type, 'unknown') AS device_type,
-    start_time::timestamp AS start_time,
-    end_time::timestamp AS end_time
+    login_time AS start_time,
+    (login_time + (duration_seconds || ' seconds')::interval) AS end_time,
+    duration_seconds
 FROM raw.user_session_logs
-WHERE start_time IS NOT NULL AND end_time IS NOT NULL AND user_id IS NOT NULL;
+WHERE login_time IS NOT NULL;
 
--- ==============================================================================
--- 11. TABLE DE FAITS : MÉTÉO HORAIRE
--- Mesures environnementales. Souvent utilisée pour corréler avec les ventes.
--- Transformations : Gestion des valeurs nulles pour température/pluie.
--- ==============================================================================
-CREATE TABLE analytics_le_roux_boisgontier.weather_forecast_hourly AS
+-- 12. Résumé Activité
+CREATE TABLE analytics_le_roux_boisgontier.daily_activity_summary_old AS
 SELECT
-    date_time::timestamp AS date_time,
-    city_id,
-    COALESCE(temperature_celsius, 0) AS temperature_celsius,
-    COALESCE(precipitation_mm, 0) AS precipitation_mm
-FROM raw.weather_forecast_hourly
-WHERE date_time IS NOT NULL AND city_id IS NOT NULL;
-
--- ==============================================================================
--- 12. TABLE DE FAITS : MAINTENANCE
--- Événements techniques sur les vélos.
--- ==============================================================================
-CREATE TABLE analytics_le_roux_boisgontier.bike_maintenance_logs AS
-SELECT
-    maintenance_id,
-    bike_id,
-    issue_description,
-    maintenance_date::date AS maintenance_date
-FROM raw.bike_maintenance_logs
-WHERE bike_id IS NOT NULL AND maintenance_date IS NOT NULL;
+    summary_date AS date,
+    COALESCE(total_rentals, 0) AS total_rentals,
+    total_revenue_eur
+FROM raw.daily_activity_summary_old
+WHERE summary_date IS NOT NULL;
 ```
 
 Les noms de colonnes sont adaptés aux attentes métiers du TP
@@ -256,12 +307,56 @@ Les noms de colonnes sont adaptés aux attentes métiers du TP
 * Créer une table avec les métriques clefs agrégées au bon niveau (jour, ville, type vélo etc.) :  totalrentals, averagedurationminutes, uniqueusers, etc.
 * Exemple de requête d'agrégation en SQL pour la table gold.
 
+```
+CREATE TABLE analytics_le_roux_boisgontier.gold_daily_activity AS
+SELECT
+    -- 1. Dimensions (Axes d'analyse)
+    DATE(r.start_time) AS rental_date,       -- Granularité : Jour 
+    c.city_name,                             -- Granularité : Ville 
+    s.station_name,                          -- Granularité : Station 
+    b.bike_type,                             -- Granularité : Type de vélo 
+    sub.sub_type AS subscription_type,       -- Granularité : Abonnement 
+
+    -- 2. Métriques (KPIs)
+    COUNT(r.id) AS total_rentals,                        -- Nombre total de locations [cite: 44]
+    ROUND(AVG(r.duration_minutes)::numeric, 2) AS average_duration_minutes, -- Durée moyenne [cite: 45]
+    COUNT(DISTINCT r.user_id) AS unique_users            -- Utilisateurs uniques [cite: 45]
+
+FROM 
+    -- Table de faits (Silver)
+    analytics_le_roux_boisgontier.bikes_rentals r
+    
+    -- Jointures vers les dimensions (Silver)
+    JOIN analytics_le_roux_boisgontier.bikes b ON r.bike_id = b.bike_id
+    JOIN analytics_le_roux_boisgontier.bikes_station s ON r.station_start_id = s.station_id
+    JOIN analytics_le_roux_boisgontier.cities c ON s.city_id = c.city_id
+    JOIN analytics_le_roux_boisgontier.user_accounts u ON r.user_id = u.user_id
+    JOIN analytics_le_roux_boisgontier.subscriptions sub ON u.sub_id = sub.sub_id
+
+GROUP BY
+    DATE(r.start_time),
+    c.city_name,
+    s.station_name,
+    b.bike_type,
+    sub.sub_type;
+
+-- Vérification rapide du résultat
+SELECT * FROM analytics_le_roux_boisgontier.gold_daily_activity LIMIT 10;
+```
+
+Cf capture d'écran gold
+
 **Etape 6 - Création du Dashboard dans Metabase**
 
 * Ajouter la source PostgreSQL
 * Importer la table gold comme dataset
+
+**Cf capture d'écran**
+
 * Créer les graphiques attendus : évolution des locations, top villes, KPI.
 * Construire un dashboard final avec ces éléments.
+
+
 
 **Etape 7 - Identifier les rôles utilisateurs (ex : marketinguser)**
 
