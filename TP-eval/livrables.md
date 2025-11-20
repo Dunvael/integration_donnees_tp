@@ -356,7 +356,7 @@ Cf capture d'écran gold
 * Créer les graphiques attendus : évolution des locations, top villes, KPI.
 * Construire un dashboard final avec ces éléments.
 
-
+Cf capture d'écran des dashboards
 
 **Etape 7 - Identifier les rôles utilisateurs (ex : marketinguser)**
 
