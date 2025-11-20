@@ -19,16 +19,51 @@ Lien GitHub docker : <https://github.com/mouradelchyakhi/enseignement_epsi/tree/
 * Explorer les tables avec les tags utiles (ex. "Source", "PII")
 * Lister les tables de fait et de dimension qui semblent pertinentes pour le dashboard
 
+*Besoin client* : La direction Marketing souhaite un Dashboard pour suivre l'activité quotidienne : nombre de locations, durée moyenne des trajets, les vélos les plus utilisés, habitude par ville, âge des consommateurs, type d’abonnement pris, … etc
+
+4. Tables et faits pertinents : 
+
+* Bikes rentals -> (nbr de locations) / Start T- end T fait (vélos les + utilisés)
+* Bikes Station -> Station ID, Station Name, Capacity fait
+* Bikes -> Bike ID (type) et Status dimensions
+* Cities -> City ID (city name) et region dimensions (habitudes et villes)
+* Daily activity summary old -> Total rentals faits (évolution des rentals)
+* Marketings campaigns ->  Start date et end date => à lier avec Start T- end de bike rentals faits
+* Rental archives 2022 -> Start T et End T + Bike ID faits (historique des ventes d'une année à une autre)
+* subscriptions -> sub type + sub ID Faits
+* User accounts -> Birthdate + sud ID Faits => lier avec sub
+* User session logs -> device type Faits (déterminer le type de connexion pour les lcoations - téléphone, web, ...)
+* Weather forecast hourly -> Temperature Celsius et Precipitation Mm faits
+* Bike maintenance logs -> Bike ID  et Issue description dimension et faits
+
+
+| **Aspect** | **Table de faits**   | **Table de dimensions**   |
+| ---------- | -------------------- | ------------------------- |
+| Contenu    | Mesures, chiffres    | Descriptions, attributs   |
+| Rôle       | Analyse quantitative | Contexte et qualification |
+| Type       | Numérique            | Textuel / catégoriel      |
+| Volume     | Très élevé           | Moyen / faible            |
+| Exemple    | Montant des ventes   | Produit, magasin, client  |
+
+
 **Etape 2 - Analyse des tables**
 
-* Pour chaque table, consulter schéma, description, profils de données
+* Pour chaque table, consulter schéma, description, profils de données, documentation
 * Identifier les anomalies potentielles (formats incohérents, valeurs manquantes)
+
+Oui on relève des anomalies potentielles (null, station invalid/orpheline, coord_lon pas de chiffre) => cf captures d'écran.
 
 **Etape 3 - Création du schéma de transformation dans PostgreSQL**
 
-* Création du schéma de transformation dans PostgreSQL :
+* Création du schéma de transformation dans PostgreSQL : 
 * Se connecter à la base PostgreSQL avec pgAdmin
 * Créer un nouveau schéma pour les transformations
+* 
+```
+CREATE SCHEMA IF NOT EXISTS analytics_votreNom_silver;
+```
+
+CF schéma capture d'écran
 
 **Etape 4 - Nettoyage et transformation (Couche Silver)**
 
