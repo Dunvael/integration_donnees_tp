@@ -70,6 +70,187 @@ CF schéma capture d'écran
 * Copier les données brutes dans ce schéma.
 * Appliquer les corrections nécessaires :  Conversion de formats (dates, timestamps) Calculs dérivés (durée des trajets) Filtrage des valeurs aberrantes Standardisation de formats et valeurs
 
+Création d'une table nettoyée par table brute, avec conversions de types, corrections de valeurs manquantes ou aberrantes, et ajouts de calculs métiers (durée, statuts, etc.).
+
+Vérification du nom des tables dans le schéma RAW avec : 
+
+```
+sql 
+SELECT table_schema, table_name 
+FROM information_schema.tables 
+WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
+ORDER BY table_schema, table_name;
+```
+
+```
+-- ==============================================================================
+-- 1. TABLE DE FAITS : LOCATIONS (TRANSACTIONS)
+-- Cette table enregistre l'événement principal : la location d'un vélo.
+-- Transformations : Conversion timestamps, calcul de durée, exclusion des trajets impossibles.
+-- ==============================================================================
+CREATE TABLE analytics_le_roux_boisgontier.bikes_rentals AS
+SELECT
+    id,
+    bike_id,             -- FK vers Dimension Bikes
+    user_id,             -- FK vers Dimension Users
+    station_start_id,    -- FK vers Dimension Stations
+    station_end_id,      -- FK vers Dimension Stations
+    start_time::timestamp AS start_time,
+    end_time::timestamp AS end_time,
+    -- Calcul de la durée en minutes. GREATEST assure qu'on a pas de durée négative.
+    GREATEST(EXTRACT(EPOCH FROM (end_time::timestamp - start_time::timestamp))/60, 0) AS duration_minutes
+FROM raw.bikes_rentals
+WHERE 
+    start_time IS NOT NULL
+    AND end_time IS NOT NULL
+    AND end_time > start_time;
+
+-- ==============================================================================
+-- 2. TABLE DE DIMENSION : STATIONS
+-- Contexte : Où se trouvent les vélos ?
+-- Transformations : Gestion des capacités nulles (par défaut à 0).
+-- ==============================================================================
+CREATE TABLE analytics_le_roux_boisgontier.bikes_station AS
+SELECT
+    station_id,   -- PK
+    station_name,
+    COALESCE(capacity, 0) AS capacity 
+FROM raw.bikes_station
+WHERE station_id IS NOT NULL AND station_name IS NOT NULL;
+
+-- ==============================================================================
+-- 3. TABLE DE DIMENSION : VÉLOS (BIKES)
+-- Contexte : Quel équipement a été utilisé ?
+-- Transformations : Gestion des statuts inconnus.
+-- ==============================================================================
+CREATE TABLE analytics_le_roux_boisgontier.bikes AS
+SELECT
+    bike_id,      -- PK
+    bike_type,
+    COALESCE(status, 'unknown') AS status
+FROM raw.bikes
+WHERE bike_id IS NOT NULL;
+
+-- ==============================================================================
+-- 4. TABLE DE DIMENSION : VILLES (CITIES)
+-- Contexte : Géographie des stations.
+-- Transformations : Région par défaut si vide.
+-- ==============================================================================
+CREATE TABLE analytics_le_roux_boisgontier.cities AS
+SELECT
+    city_id,      -- PK
+    city_name,
+    COALESCE(region, 'inconnue') AS region
+FROM raw.cities
+WHERE city_id IS NOT NULL;
+
+-- ==============================================================================
+-- 5. TABLE D'AGRÉGAT (FAITS PRÉ-CALCULÉS)
+-- Résumé quotidien historique. Utile pour les tableaux de bord rapides.
+-- ==============================================================================
+CREATE TABLE analytics_le_roux_boisgontier.daily_activity_summary_old AS
+SELECT
+    date::date AS date,
+    COALESCE(total_rentals, 0) AS total_rentals
+FROM raw.daily_activity_summary_old
+WHERE date IS NOT NULL;
+
+-- ==============================================================================
+-- 6. TABLE DE DIMENSION : CAMPAGNES MARKETING
+-- Contexte : Pourquoi y a-t-il des pics de ventes ?
+-- Transformations : Cast des dates au format timestamp.
+-- ==============================================================================
+CREATE TABLE analytics_le_roux_boisgontier.marketing_campaigns AS
+SELECT
+    campaign_id,   -- PK
+    campaign_name,
+    start_date::timestamp AS start_date,
+    end_date::timestamp AS end_date
+FROM raw.marketing_campaigns
+WHERE start_date IS NOT NULL AND end_date IS NOT NULL;
+
+-- ==============================================================================
+-- 7. TABLE DE FAITS : ARCHIVES 2022
+-- Données froides (historique). Même structure que bikes_rentals.
+-- ==============================================================================
+CREATE TABLE analytics_le_roux_boisgontier.rental_archives_2022 AS
+SELECT
+    archive_id,
+    bike_id,
+    start_time::timestamp AS start_time,
+    end_time::timestamp AS end_time,
+    GREATEST(EXTRACT(EPOCH FROM (end_time::timestamp - start_time::timestamp))/60, 0) AS duration_minutes
+FROM raw.rental_archives_2022
+WHERE start_time IS NOT NULL AND end_time IS NOT NULL AND end_time > start_time;
+
+-- ==============================================================================
+-- 8. TABLE DE DIMENSION (ou TABLE DE LIEN) : ABONNEMENTS
+-- Relie un utilisateur à un type d'abonnement.
+-- ==============================================================================
+CREATE TABLE analytics_le_roux_boisgontier.subscriptions AS
+SELECT
+    sub_id,
+    sub_type,
+    user_id
+FROM raw.subscriptions
+WHERE sub_id IS NOT NULL;
+
+-- ==============================================================================
+-- 9. TABLE DE DIMENSION : UTILISATEURS (ACCOUNTS)
+-- Contexte : Qui loue les vélos ? (Âge, type d'abonnement)
+-- ==============================================================================
+CREATE TABLE analytics_le_roux_boisgontier.user_accounts AS
+SELECT
+    user_id,       -- PK
+    birthdate::date AS birthdate,
+    sub_id         -- FK vers Subscriptions
+FROM raw.user_accounts
+WHERE user_id IS NOT NULL AND birthdate IS NOT NULL;
+
+-- ==============================================================================
+-- 10. TABLE DE FAITS : LOGS DE SESSION
+-- Événements numériques (logs). Granularité fine (clic/connexion).
+-- ==============================================================================
+CREATE TABLE analytics_le_roux_boisgontier.user_session_logs AS
+SELECT
+    session_id,
+    user_id,
+    COALESCE(device_type, 'unknown') AS device_type,
+    start_time::timestamp AS start_time,
+    end_time::timestamp AS end_time
+FROM raw.user_session_logs
+WHERE start_time IS NOT NULL AND end_time IS NOT NULL AND user_id IS NOT NULL;
+
+-- ==============================================================================
+-- 11. TABLE DE FAITS : MÉTÉO HORAIRE
+-- Mesures environnementales. Souvent utilisée pour corréler avec les ventes.
+-- Transformations : Gestion des valeurs nulles pour température/pluie.
+-- ==============================================================================
+CREATE TABLE analytics_le_roux_boisgontier.weather_forecast_hourly AS
+SELECT
+    date_time::timestamp AS date_time,
+    city_id,
+    COALESCE(temperature_celsius, 0) AS temperature_celsius,
+    COALESCE(precipitation_mm, 0) AS precipitation_mm
+FROM raw.weather_forecast_hourly
+WHERE date_time IS NOT NULL AND city_id IS NOT NULL;
+
+-- ==============================================================================
+-- 12. TABLE DE FAITS : MAINTENANCE
+-- Événements techniques sur les vélos.
+-- ==============================================================================
+CREATE TABLE analytics_le_roux_boisgontier.bike_maintenance_logs AS
+SELECT
+    maintenance_id,
+    bike_id,
+    issue_description,
+    maintenance_date::date AS maintenance_date
+FROM raw.bike_maintenance_logs
+WHERE bike_id IS NOT NULL AND maintenance_date IS NOT NULL;
+```
+
+Les noms de colonnes sont adaptés aux attentes métiers du TP
+
 **Etape 5 - Agrégation métier (Couche Gold)**
 
 * Créer une table avec les métriques clefs agrégées au bon niveau (jour, ville, type vélo etc.) :  totalrentals, averagedurationminutes, uniqueusers, etc.
