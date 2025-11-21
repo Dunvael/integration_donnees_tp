@@ -37,18 +37,18 @@ Les douze tables suivantes ont été sélectionnées avec des critères d'analys
 
 | **Tables** | **Données sélectionnés**   | **justification**   | **Faits** | **Dimensions** |  
 | :---------: | :-------------------------: | :------------------: | :--------: | :-------------: |
-| Bikes rentals | nbr de locations / Start T- End T |   |   |   |
-|     |     |   |   |   |
-|     |     |   |   |   |
-|     |     |   |   |   |
-|     |     |   |   |   |
-|     |     |   |   |   |
-|     |     |   |   |   |
-|     |     |   |   |   |
-|     |     |   |   |   |
-|     |     |   |   |   |
-|     |     |   |   |   |
-|     |     |   |   |   |
+| Bikes rentals | nbr de locations / Start T- End T |   | &#x2611;  |   |
+|     |     |   | &#x2611;  |   |
+|     |     |   |   | &#x2611;  |
+|     |     |   |   | &#x2611;  |
+|     |     |   | &#x2611; |   |
+|     |     |   | &#x2611; |   |
+|     |     |   | &#x2611; |   |
+|     |     |   | &#x2611; |   |
+|     |     |   | &#x2611; |   |
+|     |     |   | &#x2611; |   |
+|     |     |   | &#x2611; |   |
+|     |     |   | &#x2611; | &#x2611; |
 
 
 * Bikes rentals -> (nbr de locations) / Start T- end T fait (vélos les + utilisés)
