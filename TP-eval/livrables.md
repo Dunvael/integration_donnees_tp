@@ -81,13 +81,13 @@ Après réflexion et analyse, nous sommes partis sur ces douze tables de donnée
 | Bikes | Bike ID (type) et Status |   | &#x2611; |   |
 | Cities | City ID (city name), Regions |   |   | &#x2611;  |
 | Daily activity summary old | Total rentals | évolution des rentals | &#x2611; |   |
-| Marketings campaigns |     |   | &#x2611; |   |
-| Rental archives 2022 |     |   | &#x2611; |   |
-| Subscriptions |     |   | &#x2611; |   |
-| User accounts |     |   | &#x2611; |   |
-| User session logs |     |   | &#x2611; |   |
-| Bike maintenance logs |     |   | &#x2611; | &#x2611; |
-| Weather forecast hourly |     |   | &#x2611; | |
+| Marketings campaigns | Start date, End date |   | &#x2611; |   |
+| Rental archives 2022 | Start T, End T, Bike ID |   | &#x2611; |   |
+| Subscriptions | Sub type, Sub ID |   | &#x2611; |   |
+| User accounts | Birthdate, Sub ID |   | &#x2611; |   |
+| User session logs | Device type | Déterminer le type de connexion pour les locations, téléphone, web, ...  | &#x2611; |   |
+| Bike maintenance logs | Bike ID  et Issue description |   | &#x2611; | &#x2611; |
+| Weather forecast hourly |  Temperature Celsius, Precipitations Mm |   | &#x2611; | |
 
 
 * Bikes rentals -> (nbr de locations) / Start T- end T fait (vélos les + utilisés)
@@ -98,13 +98,10 @@ Après réflexion et analyse, nous sommes partis sur ces douze tables de donnée
 * Marketings campaigns ->  Start date et end date => à lier avec Start T- end de bike rentals faits
 * Rental archives 2022 -> Start T et End T + Bike ID faits (historique des ventes d'une année à une autre)
 * subscriptions -> sub type + sub ID Faits
-* User accounts -> Birthdate + sud ID Faits => lier avec sub
+* User accounts -> Birthdate + sub ID Faits => lier avec sub
 * User session logs -> device type Faits (déterminer le type de connexion pour les lcoations - téléphone, web, ...)
 * Weather forecast hourly -> Temperature Celsius et Precipitation Mm faits
 * Bike maintenance logs -> Bike ID  et Issue description dimension et faits
-
-
-
 
 
 **Etape 2 - Analyse des tables**
