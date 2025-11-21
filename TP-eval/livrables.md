@@ -13,15 +13,43 @@ Lien GitHub docker : <https://github.com/mouradelchyakhi/enseignement_epsi/tree/
 
 # Étapes principales du projet
 
-**Etape 1 - Connexion à OpenMetadata**
-
-* Se connecter à l’instance OpenMetadata VeloCity
-* Explorer les tables avec les tags utiles (ex. "Source", "PII")
-* Lister les tables de fait et de dimension qui semblent pertinentes pour le dashboard
+**Etape 1**
 
 *Besoin client* : La direction Marketing souhaite un Dashboard pour suivre l'activité quotidienne : nombre de locations, durée moyenne des trajets, les vélos les plus utilisés, habitude par ville, âge des consommateurs, type d’abonnement pris, … etc
 
-4. Tables et faits pertinents : 
+1. Tables et faits pertinents : 
+
+![Tables et faits pertinents](./Images/Part1/tables_choisies.webp)
+
+**Tableau présentant les caractéristiques d'une table de faits et d'une table de dimensions :**
+
+| **Aspect** | **Table de faits**   | **Table de dimensions**   |
+| ---------- | -------------------- | ------------------------- |
+| Contenu    | Mesures, chiffres    | Descriptions, attributs   |
+| Rôle       | Analyse quantitative | Contexte et qualification |
+| Type       | Numérique            | Textuel / catégoriel      |
+| Volume     | Très élevé           | Moyen / faible            |
+| Exemple    | Montant des ventes   | Produit, magasin, client  |
+
+*Il est possible d'avoir une table de faits et de dimensions associés*.
+
+Les douze tables suivantes ont été sélectionnées avec des critères d'analyse spcécifiques.
+
+| **Tables** | **Données sélectionnés**   | **justification**   | **Faits** | **Dimensions** |  
+| ---------- | -------------------------- | ------------------- | --------- | -------------- |
+| Bikes rentals | nbr de locations / Start T- End T |   |   |   |
+|     |     |   |   |   |
+|     |     |   |   |   |
+|     |     |   |   |   |
+|     |     |   |   |   |
+|     |     |   |   |   |
+|     |     |   |   |   |
+|     |     |   |   |   |
+|     |     |   |   |   |
+|     |     |   |   |   |
+|     |     |   |   |   |
+|     |     |   |   |   |
+
 
 * Bikes rentals -> (nbr de locations) / Start T- end T fait (vélos les + utilisés)
 * Bikes Station -> Station ID, Station Name, Capacity fait
@@ -36,16 +64,9 @@ Lien GitHub docker : <https://github.com/mouradelchyakhi/enseignement_epsi/tree/
 * Weather forecast hourly -> Temperature Celsius et Precipitation Mm faits
 * Bike maintenance logs -> Bike ID  et Issue description dimension et faits
 
-![Tables et faits pertinents](./C:\Users\IDLE6450\OneDrive - France Travail\Documents\EPSI - Cours\Data Management\Mourad\TP_eval\Part1/tables_choisies.png)
 
 
-| **Aspect** | **Table de faits**   | **Table de dimensions**   |
-| ---------- | -------------------- | ------------------------- |
-| Contenu    | Mesures, chiffres    | Descriptions, attributs   |
-| Rôle       | Analyse quantitative | Contexte et qualification |
-| Type       | Numérique            | Textuel / catégoriel      |
-| Volume     | Très élevé           | Moyen / faible            |
-| Exemple    | Montant des ventes   | Produit, magasin, client  |
+
 
 
 **Etape 2 - Analyse des tables**
@@ -57,7 +78,7 @@ Oui on relève des anomalies potentielles (null, station invalid/orpheline, coor
 
 
 | Table | Anomalies Principale | Correction à appliquer |  
-| --- | --- | --- |  
+| ----- | -------------------- | ---------------------- |  
 | bike_maintenance_logs | Dates au format texte/timestamp mixte | Cast en DATE standard |
 | bikes | "Types hétérogènes (""E-bike"" vs ""Electrique"")" | Standardisation via CASE WHEN |  
 | bikes_rentals | Trajets < 2 min et IDs non standards | Filtre durée & Renommage colonnes |  
