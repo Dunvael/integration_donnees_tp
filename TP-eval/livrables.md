@@ -1,27 +1,64 @@
 # Livrables pour le TP - Cycle de vie de la donnée : de la source au Dashboard - 1ère Version du TP
 
-*Formateur* : Mourad El Chyaki
+*Formateur* : Mourad Elchyakhi
 
 *Membres du groupe* : 
 
 * Aymeric BOISGONTIER
 * Dunvael LE ROUX
 
+---
+
+# Projet
+
+## Objectifs
+
+=> Simuler un projet data complet, de la découverte de la donnée brute à la création d'un Dashboard décisionnel, en intégrant les bonnes pratiques de modélisation (Médaillon) et de sécurité.
+
+## Outils
+
+OpenMetadata(image Docker complète seulement), PostgreSQL, Metabase.
+
+## Scénario
+
+Vous êtes Data Engineer/Analyst chez "VéloCity", une entreprise de location de vélos en libre-service. La direction Marketing souhaite un Dashboard pour suivre l'activité quotidienne : nombre de locations, durée moyenne des trajets, les vélos les plus utilisés, habitude par ville, âge des consommateurs, type d’abonnement pris, ... etc.
+
 Lien GitHub docker : <https://github.com/mouradelchyakhi/enseignement_epsi/tree/main/tp_docker_light>
 
 ---
 
-# Étapes principales du projet
+# Étapes du projet
 
-**Etape 1**
+**Partie 1 : Découverte et Compréhension (OpenMetadata ou fichier yaml)**
 
-*Besoin client* : La direction Marketing souhaite un Dashboard pour suivre l'activité quotidienne : nombre de locations, durée moyenne des trajets, les vélos les plus utilisés, habitude par ville, âge des consommateurs, type d’abonnement pris, … etc
+***Objectif*** : Identifier les données sources pertinentes pour répondre aux besoins métiers.
 
-1. Tables et faits pertinents : 
+1. Nous nous sommes connectés à l'instance OpenMetadata de "VéloCity".
 
-![Tables et faits pertinents](./Images/Part1/tables_choisies.webp)
+![Bienvenue sur Metabase](./Images/Part1/connexion_metabase1.PNG)
+![Création compte 1](./Images/Part1/connexion_metabase2.PNG)
+![Création compte 2](./Images/Part1/connexion_metabase3.PNG)
 
-**Tableau présentant les caractéristiques d'une table de faits et d'une table de dimensions :**
+Nous avons ensuite ajouté la base de données :
+
+![Ajout de la base de données](./Images/Part1/connexion_metabase4.PNG)
+![Metabase Accueil](./Images/Part1/connexion_metabase5.PNG)
+
+2. Nous avons exploré OpenMetadata :
+
+* Nous avons navigué dans le catalogue et identifié les tables qui semblent pertinentes pour ce TP.
+
+* Nous avons utilisé la recherche et les "Tags" (ex: "Source", "PII") pour trouver les bonnes tables.  
+
+**Tables et faits pertinents :**
+
+Après réflexion et analyse, nous sommes partis sur ces douze tables de données qui permettent de réaliser des dashboards complets et croisés :
+
+<p align="center">
+  <img src="./Images/Part1/tables_choisies.webp" alt="Tables et faits pertinents">
+</p>
+
+=> Avant de justifier les choix de tables et de déterminer s'il s'agit de tables de faits ou de dimensions, nous avons défini et synthétisé les cacarctéristiques d'une table de fait et d'une table de dimensions dans un tableau :
 
 | **Aspect** | **Table de faits**   | **Table de dimensions**   |
 | :--------: | :------------------: | :-----------------------: |
@@ -34,22 +71,23 @@ Lien GitHub docker : <https://github.com/mouradelchyakhi/enseignement_epsi/tree/
 
 *Il est possible d'avoir une table de faits et de dimensions associés*.
 
-Les douze tables suivantes ont été sélectionnées avec des critères d'analyse spcécifiques.
+
+**Justification des tables et attribution Fait/Dimension :**
 
 | **Tables** | **Données sélectionnés**   | **justification**   | **Faits** | **Dimensions** |  
 | :---------: | :-------------------------: | :------------------: | :--------: | :-------------: |
-| Bikes rentals | nbr de locations / Start T- End T |   | &#x2611;  |   |
-|     |     |   | &#x2611;  |   |
-|     |     |   |   | &#x2611;  |
-|     |     |   |   | &#x2611;  |
-|     |     |   | &#x2611; |   |
-|     |     |   | &#x2611; |   |
-|     |     |   | &#x2611; |   |
-|     |     |   | &#x2611; |   |
-|     |     |   | &#x2611; |   |
-|     |     |   | &#x2611; |   |
-|     |     |   | &#x2611; |   |
-|     |     |   | &#x2611; | &#x2611; |
+| Bikes rentals | Nombre de locations / Start T - End T | Vélos les plus utilisés  | &#x2611;  |   |
+| Bikes Station |  Station ID, Station Name, Capacity   |   | &#x2611;  |   |
+| Bikes | Bike ID (type) et Status |   | &#x2611; |   |
+| Cities | City ID (city name), Regions |   |   | &#x2611;  |
+| Daily activity summary old | Total rentals | évolution des rentals | &#x2611; |   |
+| Marketings campaigns |     |   | &#x2611; |   |
+| Rental archives 2022 |     |   | &#x2611; |   |
+| Subscriptions |     |   | &#x2611; |   |
+| User accounts |     |   | &#x2611; |   |
+| User session logs |     |   | &#x2611; |   |
+| Bike maintenance logs |     |   | &#x2611; | &#x2611; |
+| Weather forecast hourly |     |   | &#x2611; | |
 
 
 * Bikes rentals -> (nbr de locations) / Start T- end T fait (vélos les + utilisés)
@@ -64,6 +102,10 @@ Les douze tables suivantes ont été sélectionnées avec des critères d'analys
 * User session logs -> device type Faits (déterminer le type de connexion pour les lcoations - téléphone, web, ...)
 * Weather forecast hourly -> Temperature Celsius et Precipitation Mm faits
 * Bike maintenance logs -> Bike ID  et Issue description dimension et faits
+
+
+
+
 
 **Etape 2 - Analyse des tables**
 
