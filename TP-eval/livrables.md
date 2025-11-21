@@ -36,6 +36,8 @@ Lien GitHub docker : <https://github.com/mouradelchyakhi/enseignement_epsi/tree/
 * Weather forecast hourly -> Temperature Celsius et Precipitation Mm faits
 * Bike maintenance logs -> Bike ID  et Issue description dimension et faits
 
+![Tables et faits pertinents](./C:\Users\IDLE6450\OneDrive - France Travail\Documents\EPSI - Cours\Data Management\Mourad\TP_eval\Part1/tables_choisies.png)
+
 
 | **Aspect** | **Table de faits**   | **Table de dimensions**   |
 | ---------- | -------------------- | ------------------------- |
