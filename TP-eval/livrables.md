@@ -29,6 +29,7 @@ Lien GitHub docker : <https://github.com/mouradelchyakhi/enseignement_epsi/tree/
 | Rôle       | Analyse quantitative | Contexte et qualification |
 | Type       | Numérique            | Textuel / catégoriel      |
 | Volume     | Très élevé           | Moyen / faible            |
+| Fréquence d'ajout de lignes/données | Très élevée | Peu élevée |
 | Exemple    | Montant des ventes   | Produit, magasin, client  |
 
 *Il est possible d'avoir une table de faits et de dimensions associés*.
