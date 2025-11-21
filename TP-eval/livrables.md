@@ -24,7 +24,7 @@ Lien GitHub docker : <https://github.com/mouradelchyakhi/enseignement_epsi/tree/
 **Tableau présentant les caractéristiques d'une table de faits et d'une table de dimensions :**
 
 | **Aspect** | **Table de faits**   | **Table de dimensions**   |
-| ---------- | -------------------- | ------------------------- |
+| :--------: | :------------------: | :-----------------------: |
 | Contenu    | Mesures, chiffres    | Descriptions, attributs   |
 | Rôle       | Analyse quantitative | Contexte et qualification |
 | Type       | Numérique            | Textuel / catégoriel      |
@@ -36,7 +36,7 @@ Lien GitHub docker : <https://github.com/mouradelchyakhi/enseignement_epsi/tree/
 Les douze tables suivantes ont été sélectionnées avec des critères d'analyse spcécifiques.
 
 | **Tables** | **Données sélectionnés**   | **justification**   | **Faits** | **Dimensions** |  
-| ---------- | -------------------------- | ------------------- | --------- | -------------- |
+| :---------: | :-------------------------: | :------------------: | :--------: | :-------------: |
 | Bikes rentals | nbr de locations / Start T- End T |   |   |   |
 |     |     |   |   |   |
 |     |     |   |   |   |
