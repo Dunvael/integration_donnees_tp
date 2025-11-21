@@ -64,11 +64,6 @@ Les douze tables suivantes ont été sélectionnées avec des critères d'analys
 * Weather forecast hourly -> Temperature Celsius et Precipitation Mm faits
 * Bike maintenance logs -> Bike ID  et Issue description dimension et faits
 
-
-
-
-
-
 **Etape 2 - Analyse des tables**
 
 * Pour chaque table, consulter schéma, description, profils de données, documentation
