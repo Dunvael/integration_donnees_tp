@@ -17,7 +17,9 @@ Simuler un projet data complet, de la découverte de la donnée brute à la cré
 
 ## Outils
 
-OpenMetadata(image Docker complète seulement), PostgreSQL, Metabase.
+* OpenMetadata (image Docker complète seulement)
+* PostgreSQL
+* Metabase
 
 ## Scénario
 
