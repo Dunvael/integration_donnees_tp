@@ -35,7 +35,9 @@ Lien GitHub docker : <https://github.com/mouradelchyakhi/enseignement_epsi/tree/
 
 ***Objectif*** : Identifier les données sources pertinentes pour répondre aux besoins métiers.
 
-### 1. Nous nous sommes connectés à l'instance OpenMetadata de "VéloCity"
+### 1. Connexion à OpenMetadata
+
+Nous nous sommes connectés à l'instance OpenMetadata de "VéloCity"
 
 ![Bienvenue sur Metabase](./Images/Part1/connexion_metabase1.PNG)
 ![Création compte 1](./Images/Part1/connexion_metabase2.PNG)
@@ -66,7 +68,7 @@ Après réflexion et analyse, nous sommes partis sur ces douze tables de donnée
   <img src="./Images/Part1/tables_choisies.webp" alt="Tables et faits pertinents">
 </p>
 
-=> Avant de justifier les choix de tables et de déterminer s'il s'agit de tables de faits ou de dimensions, nous avons défini et synthétisé les cacarctéristiques d'une table de fait et d'une table de dimensions dans un tableau :
+Avant de justifier les choix de tables et de déterminer s'il s'agit de tables de faits ou de dimensions, nous avons défini et synthétisé les caractéristiques d'une table de fait et d'une table de dimensions dans un tableau :
 
 | **Aspect** | **Table de faits**   | **Table de dimensions**   |
 | :--------: | :------------------: | :-----------------------: |
@@ -83,17 +85,17 @@ Après réflexion et analyse, nous sommes partis sur ces douze tables de donnée
 
 | **Tables** | **Données sélectionnés**   | **justification**   | **Faits** | **Dimensions** |  
 | :---------: | :-------------------------: | :------------------: | :--------: | :-------------: |
-| Bikes rentals | Nombre de locations / Start T - End T | Permet de déterminer les vélos les plus utilisés et leur temps d'utilisation et donc les préférences et besoins des utilisateurs sur les types de vélos | &#x2611;  |   |
-| Bikes Station |  Station ID, Station Name, Capacity   | Permet de connaître les stations de vélos ainsi que leur capacité afin de déterminer quelles stations ont le plus de "succès", possibilité de lier les données avec les types de vélos et d'environnement (régions/villes...) | &#x2611;  |   |
-| Bikes | Bike ID (type) et Status | Permet de cibler les vélos utilisés ou non dans les stations, possibilité de lier les données avec les stations mais aussi les locations de vélos (notamment selon leur type) | &#x2611; |   |
-| Cities | City ID (city name), Regions | Permet de cibler les villes et régions où est présent VeloCity, possibilité de lier les données avec les stations, types de vélos, locations de vélos et par exemple de cibler les villes/régions les plus rentables et celles qui nécessitent plus de publicité |   | &#x2611;  |
-| Daily activity summary old | Total rentals | Permet de calculer le taux de locations de vélos quotidiennes et de réaliser des comparatifs en liant les données avec les données météorologiques ou encore les campagnes marketing ou les types de vélos disponibles dans chaque station par exemple | &#x2611; |   |
-| Marketings campaigns | Start date, End date | Permet de définir l'impact de la publicité sur le taux de location en liant les données avec le nombre de locations de vélos quotidiennes, leur début et fin de location par exemple | &#x2611; |   |
-| Rental archives 2022 | Start T, End T, Bike ID | Permet d'observer l'historique des ventes d'une année à une autre et donc de déterminer l'évolution du marché dans les années à venir, possibilité de lier les données avec les campagnes marketing pour déterminer l'impact de la publicité sur les utilisateurs | &#x2611; |   |
-| Subscriptions | Sub type, Sub ID | Permet de déterminer quels abonnements ont le plus de succès auprès des utilisateurs, possibilité de lier les données avec les villes/régions, avec les campagnes marketing ou encore le type d'utilisateur (différents profils utilisateurs pour différents besoins) | &#x2611; |   |
-| User accounts | Birthdate, Sub ID | Permet de connaître le type de clientèle de VéloCity et de d'établir des profils utilisateurs selon les souscriptions et âge (clientèle plus agée, jeune, retraités ou employés...), possibilité de lier les données avec le type de souscription, le type de location, ... et de définir les préférences des clients par exemple | &#x2611; |   |
-| User session logs | Device type | Permet de déterminer le type de connexion pour les locations (téléphone, web, ...) afin de comprendre les préférences d'interface des utilisateurs pour louer un vélo | &#x2611; |   |
-| Bike maintenance logs | Bike ID  et Issue description | Permet de comprendre quel type de vélos est le plus âbimé, possibilité de lier les données avec les status de vélos par exemple | &#x2611; | &#x2611; |
+| Bikes rentals | Nombre de locations / Start T - End T | Permet de déterminer les vélos les plus utilisés et leur temps d'utilisation et donc les préférences et besoins des utilisateurs sur les types de vélos | &#x2611;  | |
+| Bikes Station |  Station ID, Station Name, Capacity   | Permet de connaître les stations de vélos ainsi que leur capacité afin de déterminer quelles stations ont le plus de "succès", possibilité de lier les données avec les types de vélos et d'environnement (régions/villes...) | &#x2611;  | |
+| Bikes | Bike ID (type) et Status | Permet de cibler les vélos utilisés ou non dans les stations, possibilité de lier les données avec les stations mais aussi les locations de vélos (notamment selon leur type) | &#x2611; | |
+| Cities | City ID (city name), Regions | Permet de cibler les villes et régions où est présent VeloCity, possibilité de lier les données avec les stations, types de vélos, locations de vélos et par exemple de cibler les villes/régions les plus rentables et celles qui nécessitent plus de publicité | | &#x2611;  |
+| Daily activity summary old | Total rentals | Permet de calculer le taux de locations de vélos quotidiennes et de réaliser des comparatifs en liant les données avec les données météorologiques ou encore les campagnes marketing ou les types de vélos disponibles dans chaque station par exemple | &#x2611; | |
+| Marketings campaigns | Start date, End date | Permet de définir l'impact de la publicité sur le taux de location en liant les données avec le nombre de locations de vélos quotidiennes, leur début et fin de location par exemple | &#x2611; | |
+| Rental archives 2022 | Start T, End T, Bike ID | Permet d'observer l'historique des ventes d'une année à une autre et donc de déterminer l'évolution du marché dans les années à venir, possibilité de lier les données avec les campagnes marketing pour déterminer l'impact de la publicité sur les utilisateurs | &#x2611; | |
+| Subscriptions | Sub type, Sub ID | Permet de déterminer quels abonnements ont le plus de succès auprès des utilisateurs, possibilité de lier les données avec les villes/régions, avec les campagnes marketing ou encore le type d'utilisateur (différents profils utilisateurs pour différents besoins) | &#x2611; | |
+| User accounts | Birthdate, Sub ID | Permet de connaître le type de clientèle de VéloCity et de d'établir des profils utilisateurs selon les souscriptions et âge (clientèle plus agée, jeune, retraités ou employés...), possibilité de lier les données avec le type de souscription, le type de location, ... et de définir les préférences des clients par exemple | &#x2611; | |
+| User session logs | Device type | Permet de déterminer le type de connexion pour les locations (téléphone, web, ...) afin de comprendre les préférences d'interface des utilisateurs pour louer un vélo | &#x2611; | |
+| Bike maintenance logs | Bike ID  et Issue description | Permet de comprendre quel type de vélos est le plus âbimé, possibilité de lier les données avec les status de vélos par exemple | | &#x2611; |
 | Weather forecast hourly |  Temperature Celsius, Precipitations Mm | Permet de déterminer le temps et l'impact des conditions météorologiques sur la location de vélos, possibilité de lier avec les données de locatins quotidienne, du temps de location d'un vélo, des villes et régions par exemple | &#x2611; | |
 
 ---
@@ -110,7 +112,7 @@ Nous nous sommes connectés à la base PostgreSQL avec pgAdmin.
 ![Connexion Serveur EPSI 2](./Images/Part1/connexion_pgAdmin3_epsi-server2.PNG)
 ![Connexion Serveur EPSI 3](./Images/Part1/connexion_pgAdmin3_epsi-server3.PNG)
 
-Nous trouvons les mêmes informations, la différence réside dans l'interface utilisateur (visuel et présentation).  
+Nous trouvons les mêmes informations, la différence réside dans l'interface utilisateur (visuel et présentation).
 
 Exemple :
 
@@ -122,7 +124,7 @@ Exemple :
   <img src="./Images/Part2/diff_metadata_pgadmin2.webp" alt="Données pour la table Bike Rentals sur Metadata">
 </p>
 
-Nous avons relevés des anomalies potentielles (doublons, manque de données ou "null" ou "inconnu", problème de nommage de colonne, IDs non standard, type hétérogène, dates au format texte/timestamp mixte...).  
+Nous avons relevés des anomalies potentielles (doublons, manque de données ou "null" ou "inconnu", problème de nommage de colonne, IDs non standard, type hétérogène, dates au format texte/timestamp mixte...).
 
 Exemple :
 
@@ -161,7 +163,7 @@ CREATE SCHEMA IF NOT EXISTS analytics_le_roux_boisgontier;
 
 Afin de nettoyer, typer et standardiser les données brutes pour qu'elles soient exploitables, nous avons créé une table nettoyée avec conversions de types, corrections de valeurs manquantes ou aberrantes, et ajouts de calculs métiers (durée, statuts, etc.).
 
-***Cf. le fichier script SQl_unique.sql qui contient la création des schémas, tables, transformations et commandes GRANT et REVOKE pour les accès.***
+***Cf. le fichier script `SQl_unique.sql` qui contient la création des schémas, tables, transformations et commandes GRANT et REVOKE pour les accès.***
 
 Nous avons requêté en amont PostgreSQL afin de lister les tables présentes pour notre script SQL :
 
@@ -213,6 +215,8 @@ GROUP BY
 SELECT * FROM analytics_le_roux_boisgontier.gold_daily_activity LIMIT 10;
 ```
 
+Résultat:
+
 <p align="center">
   <img src="./Images/Part2/couche_gold.webp" alt="Table Couche Gold">
 </p>
@@ -223,11 +227,11 @@ SELECT * FROM analytics_le_roux_boisgontier.gold_daily_activity LIMIT 10;
 
 ### 1. Connexion à Metabase & 2. Source de données
 
-Afin de créer un Dashboard simple pour le métier Marketing, nous :
+Afin de créer un Dashboard simple pour le métier Marketing :
 
-* nous sommes connectés à Metabase
-* avons ajouté la base PostgreSQL comme source
-* avons ajouté la table *analytics_le_roux_boisgontier.gold_daily_activity* comme dataset dans Metadata
+* Nous nous sommes connectés à Metabase.
+* Nous avons ajouté la base PostgreSQL comme source.
+* Nous avons ajouté la table *analytics_le_roux_boisgontier.gold_daily_activity* comme dataset dans Metadata.
 
 <p align="center">
   <img src="./Images/Part3/gold_added_to_sql_metabase.webp" alt="Table analytics_le_roux_boisgontier.gold_daily_activity ajoutée dans Metabase">
@@ -273,7 +277,7 @@ Nous avons écrit un script SQL pour :
 * Créer un rôle manager_lyon
 * Ne lui donner accès qu’à la table GOLD, pour la ville ‘Lyon’
 
-***Cf. le fichier script SQl_unique.sql qui contient la création des schémas, tables, transformations et commandes GRANT et REVOKE pour les accès.***
+***Cf. le fichier script `SQl_unique.sql` qui contient la création des schémas, tables, transformations et commandes GRANT et REVOKE pour les accès.***
 
 Puis nous avons testé le rôle pour nous assurer que celui-ci fonctionne bien comme convenu.
 
