@@ -217,137 +217,64 @@ SELECT * FROM analytics_le_roux_boisgontier.gold_daily_activity LIMIT 10;
 
 ---
 
-# Partie 3 : Visualisation (Metabase)
+## Partie 3 : Visualisation (Metabase)
 
-Afin de créer un Dashboard simple pour le métier Marketing, nous nous sommes connectés à Metabase et avons ajouté la table 
+### 1. Connexion à Metabase & 2. Source de données
 
-* Ajouter la source PostgreSQL
-* Importer la table gold comme dataset
+Afin de créer un Dashboard simple pour le métier Marketing, nous :
 
-**Cf capture d'écran**
+* nous sommes connectés à Metabase
+* avons ajouté la base PostgreSQL comme source
+* avons ajouté la table *analytics_le_roux_boisgontier.gold_daily_activity* comme dataset dans Metadata
 
-* Créer les graphiques attendus : évolution des locations, top villes, KPI.
-* Construire un dashboard final avec ces éléments.
+<p align="center">
+  <img src="./Images/Part3/gold_added_to_sql_metabase.webp" alt="Table analytics_le_roux_boisgontier.gold_daily_activity ajoutée dans Metabase">
+</p>
 
-Cf capture d'écran des dashboards
+### 3. Création des charts & 4. Dashboard
 
-**Etape 7 - Identifier les rôles utilisateurs (ex : marketinguser)**
+Nous avons créé les trois charts suivants :
 
-* Identifier les rôles utilisateurs (ex : marketinguser) :
-* Implémenter les droits avec commandes SQL GRANT/REVOKE pour restreindre l'accès.
-* Tester les permissions pour s’assurer que les données brutes ne sont pas accessibles
-* Mettre en place une sécurité au niveau ligne si besoin (Row-level Security)
+* Chart 1 (Courbe) : Évolution du total_rentals dans le temps (axe X = jour). 
+* Chart 2 (Bar) : Top 3 des villes par total_rentals. 
+* Chart 3 (Indicateur/KPI) : average_duration_minutes par ville. 
 
-o Si marketing_user essaie de faire SELECT * FROM raw.user_accounts;, que doit-il 
-se passer ? => il a permission denied cf capture
-o Si il fait SELECT * FROM analytics_nom1_nom2.gold_daily_activity; ? => il a accès à tout cf capture
+Et avons construit un dashboard "Suivi Activité VéloCity" à partir de ces charts :
 
-Script tâches revoke/grant et manager de Lyon :
-
-```
--- ==============================================================================
--- PARTIE 4 : SÉCURITÉ ET GOUVERNANCE
--- Objectif : Gestion des droits (RBAC) et Row-Level Security (RLS)
--- ==============================================================================
-
--- 1. CRÉATION DU RÔLE MARKETING (Utilisateur global)
--- ------------------------------------------------------------------------------
--- On supprime le rôle s'il existe déjà pour pouvoir relancer le script
-DROP ROLE IF EXISTS marketing_user;
-
--- Création du rôle avec un mot de passe
-CREATE ROLE marketing_user WITH LOGIN PASSWORD 'password123';
-
--- SÉCURITÉ : On s'assure qu'il n'a accès à RIEN par défaut sur le schéma raw
-REVOKE ALL ON SCHEMA raw FROM marketing_user;
-REVOKE ALL ON ALL TABLES IN SCHEMA raw FROM marketing_user;
-
--- SÉCURITÉ : On donne l'accès SEULEMENT au schéma analytics (usage pour traverser)
-GRANT USAGE ON SCHEMA analytics_le_roux_boisgontier TO marketing_user;
-
--- SÉCURITÉ : On donne le droit de lecture (SELECT) UNIQUEMENT sur la table Gold
-GRANT SELECT ON TABLE analytics_le_roux_boisgontier.gold_daily_activity TO marketing_user;
-
--- ------------------------------------------------------------------------------
--- 2. ROW-LEVEL SECURITY (RLS) - MANAGER LYON
--- ------------------------------------------------------------------------------
-DROP ROLE IF EXISTS manager_lyon;
-CREATE ROLE manager_lyon WITH LOGIN PASSWORD 'lyon123';
-
--- Même accès de base que le marketing : Usage du schéma et Select sur la table
-GRANT USAGE ON SCHEMA analytics_le_roux_boisgontier TO manager_lyon;
-GRANT SELECT ON TABLE analytics_le_roux_boisgontier.gold_daily_activity TO manager_lyon;
-
--- ACTIVATION DE LA RLS SUR LA TABLE GOLD
--- Cela verrouille la table : personne ne voit rien sauf si une "POLICY" l'autorise
-ALTER TABLE analytics_le_roux_boisgontier.gold_daily_activity ENABLE ROW LEVEL SECURITY;
-
--- CRÉATION DE LA POLITIQUE (POLICY) POUR LYON
--- Le manager_lyon ne verra que les lignes où city_name = 'Lyon'
-DROP POLICY IF EXISTS lyon_access_policy ON analytics_le_roux_boisgontier.gold_daily_activity;
-
-CREATE POLICY lyon_access_policy
-ON analytics_le_roux_boisgontier.gold_daily_activity
-FOR SELECT
-TO manager_lyon
-USING (city_name = 'Lyon');
-
--- CRÉATION DE LA POLITIQUE POUR LE MARKETING (GLOBAL)
--- Important : Une fois la RLS activée, il faut explicitement dire que le marketing voit TOUT (ou true)
--- Sinon, marketing_user ne verrait plus rien.
-DROP POLICY IF EXISTS marketing_global_access ON analytics_le_roux_boisgontier.gold_daily_activity;
-
-CREATE POLICY marketing_global_access
-ON analytics_le_roux_boisgontier.gold_daily_activity
-FOR SELECT
-TO marketing_user
-USING (true); -- 'true' signifie accès à toutes les lignes
-
--- ==============================================================================
--- 3. TESTS DE VÉRIFICATION (Simulation)
--- Exécutez ces blocs un par un pour tester
--- ==============================================================================
-
--- TEST A : Vérification Marketing (Doit voir toutes les villes)
-SET ROLE marketing_user;
-SELECT city_name, count(*) FROM analytics_le_roux_boisgontier.gold_daily_activity GROUP BY city_name;
--- Doit échouer (Permission denied) :
--- SELECT * FROM raw.user_accounts; 
-RESET ROLE; -- Revenir admin
-
--- TEST B : Vérification Manager Lyon (Ne doit voir QUE Lyon)
-SET ROLE manager_lyon;
-SELECT city_name, count(*) FROM analytics_le_roux_boisgontier.gold_daily_activity GROUP BY city_name;
--- Résultat attendu : Une seule ligne 'Lyon'.
-RESET ROLE;
-```
+<p align="center">
+  <img src="./Images/Part3/dashboards.webp" alt="Dashboard avec charts">
+</p>
 
 ---
 
-# Livrables
+## Partie 4 : Sécurité et Gouvernance (PostgreSQL + )
 
-## Partie 1
+### 1. Scénario & 2. Audit (Simulation)
 
-Un document (Markdown ou PDF) listant les tables sources identifiées et répondant aux questions posées.
+Si marketing_user essaie de faire `SELECT * FROM raw.user_accounts;`, il a le message *permission denied* et ne peut pas accéder aux données.
 
---- 
+<p align="center">
+  <img src="./Images/Part4/marketing_permission_denied.webp" alt="Marketing : accès refusé">
+</p>
 
-## Partie 2
+Si marketing_user fait `SELECT * FROM analytics_nom1_nom2.gold_daily_activity;`, il a accès aux données de la table *analytics_nom1_nom2.gold_daily_activity* uniquement.
 
-Un script SQL unique (.sql) contenant la création des schémas, tables, transformations
+<p align="center">
+  <img src="./Images/Part4/marketing_access_to_everything.webp" alt="Marketing : accès à la table analytics_nom1_nom2.gold_daily_activity uniquement">
+</p>
 
-```
-script SQL
-```
+### 3. Tâche (Script SQL)
 
----
+Nous avons écrit un script SQL pour :
 
-## Partie 3
+* Implémenter cette règle de sécurité
+* Créer un rôle manager_lyon
+* Ne lui donner accès qu’à la table GOLD, pour la ville ‘Lyon’
 
-Une capture d’écran du Dashboard final
+***Cf. le fichier script SQl_unique.sql qui contient la création des schémas, tables, transformations et commandes GRANT et REVOKE pour les accès.***
 
----
+Puis nous avons testé le rôle pour nous assurer que celui-ci fonctionne bien comme convenu.
 
-## Partie 4
-
-Les commandes GRANT / REVOKE pour les accès (à ajouter au script de la partie 2)
+<p align="center">
+  <img src="./Images/Part4/lyon_access.webp" alt="Test du rôle">
+</p>
