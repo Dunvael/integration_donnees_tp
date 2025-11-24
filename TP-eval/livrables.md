@@ -81,18 +81,18 @@ Après réflexion et analyse, nous sommes partis sur ces douze tables de donnée
 
 | **Tables** | **Données sélectionnés**   | **justification**   | **Faits** | **Dimensions** |  
 | :---------: | :-------------------------: | :------------------: | :--------: | :-------------: |
-| Bikes rentals | Nombre de locations / Start T - End T | Vélos les plus utilisés  | &#x2611;  |   |
-| Bikes Station |  Station ID, Station Name, Capacity   |   | &#x2611;  |   |
-| Bikes | Bike ID (type) et Status |   | &#x2611; |   |
-| Cities | City ID (city name), Regions |   |   | &#x2611;  |
-| Daily activity summary old | Total rentals | évolution des rentals | &#x2611; |   |
-| Marketings campaigns | Start date, End date | à lier avec Start T- end de bike rentals | &#x2611; |   |
-| Rental archives 2022 | Start T, End T, Bike ID | historique des ventes d'une année à une autre | &#x2611; |   |
-| Subscriptions | Sub type, Sub ID |   | &#x2611; |   |
-| User accounts | Birthdate, Sub ID | lier avec sub | &#x2611; |   |
-| User session logs | Device type | Déterminer le type de connexion pour les locations, téléphone, web, ...  | &#x2611; |   |
-| Bike maintenance logs | Bike ID  et Issue description |   | &#x2611; | &#x2611; |
-| Weather forecast hourly |  Temperature Celsius, Precipitations Mm |   | &#x2611; | |
+| Bikes rentals | Nombre de locations / Start T - End T | Permet de déterminer les vélos les plus utilisés et leur temps d'utilisation et donc les préférences et besoins des utilisateurs sur les types de vélos | &#x2611;  |   |
+| Bikes Station |  Station ID, Station Name, Capacity   | Permet de connaître les stations de vélos ainsi que leur capacité afin de déterminer quelles stations ont le plus de "succès", possibilité de lier les données avec les types de vélos et d'environnement (régions/villes...) | &#x2611;  |   |
+| Bikes | Bike ID (type) et Status | Permet de cibler les vélos utilisés ou non dans les stations, possibilité de lier les données avec les stations mais aussi les locations de vélos (notamment selon leur type) | &#x2611; |   |
+| Cities | City ID (city name), Regions | Permet de cibler les villes et régions où est présent VeloCity, possibilité de lier les données avec les stations, types de vélos, locations de vélos et par exemple de cibler les villes/régions les plus rentables et celles qui nécessitent plus de publicité |   | &#x2611;  |
+| Daily activity summary old | Total rentals | Permet de calculer le taux de locations de vélos quotidiennes et de réaliser des comparatifs en liant les données avec les données météorologiques ou encore les campagnes marketing ou les types de vélos disponibles dans chaque station par exemple | &#x2611; |   |
+| Marketings campaigns | Start date, End date | Permet de définir l'impact de la publicité sur le taux de location en liant les données avec le nombre de locations de vélos quotidiennes, leur début et fin de location par exemple | &#x2611; |   |
+| Rental archives 2022 | Start T, End T, Bike ID | Permet d'observer l'historique des ventes d'une année à une autre et donc de déterminer l'évolution du marché dans les années à venir, possibilité de lier les données avec les campagnes marketing pour déterminer l'impact de la publicité sur les utilisateurs | &#x2611; |   |
+| Subscriptions | Sub type, Sub ID | Permet de déterminer quels abonnements ont le plus de succès auprès des utilisateurs, possibilité de lier les données avec les villes/régions, avec les campagnes marketing ou encore le type d'utilisateur (différents profils utilisateurs pour différents besoins) | &#x2611; |   |
+| User accounts | Birthdate, Sub ID | Permet de connaître le type de clientèle de VéloCity et de d'établir des profils utilisateurs selon les souscriptions et âge (clientèle plus agée, jeune, retraités ou employés...), possibilité de lier les données avec le type de souscription, le type de location, ... et de définir les préférences des clients par exemple | &#x2611; |   |
+| User session logs | Device type | Permet de déterminer le type de connexion pour les locations (téléphone, web, ...) afin de comprendre les préférences d'interface des utilisateurs pour louer un vélo | &#x2611; |   |
+| Bike maintenance logs | Bike ID  et Issue description | Permet de comprendre quel type de vélos est le plus âbimé, possibilité de lier les données avec les status de vélos par exemple | &#x2611; | &#x2611; |
+| Weather forecast hourly |  Temperature Celsius, Precipitations Mm | Permet de déterminer le temps et l'impact des conditions météorologiques sur la location de vélos, possibilité de lier avec les données de locatins quotidienne, du temps de location d'un vélo, des villes et régions par exemple | &#x2611; | |
 
 ---
 
